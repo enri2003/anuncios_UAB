@@ -142,12 +142,15 @@ if (adForm) {
 // ====== UI LOGIN / LOGOUT EN NAVBAR ======
 function configurarAuthUI() {
   const btnLogout = document.getElementById('btnLogout');
-  if (!btnLogout) return;
+  const btnLogin = document.getElementById('btnLogin');
+  if (!btnLogout || !btnLogin) return;
 
   if (getToken()) {
     btnLogout.classList.remove('d-none');
+    btnLogin.classList.add('d-none');
   } else {
     btnLogout.classList.add('d-none');
+    btnLogin.classList.remove('d-none');
   }
 
   btnLogout.addEventListener('click', () => {

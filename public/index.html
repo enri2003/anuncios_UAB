@@ -10,7 +10,7 @@
     <div class="container">
       <a class="navbar-brand" href="#">Anuncios UAB</a>
       <div class="d-flex">
-        <a href="login.html" class="btn btn-outline-light me-2">Login</a>
+        <a id="btnLogin" href="login.html" class="btn btn-outline-light me-2">Login</a>
         <button id="btnLogout" class="btn btn-outline-light d-none">Cerrar sesión</button>
       </div>
     </div>
@@ -44,4 +44,13 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Precio (opcional)</label>
-        <input type="
+        <input type="number" id="precio" class="form-control" min="0">
+      </div>
+      <button type="submit" class="btn btn-primary">Publicar anuncio</button>
+      <p id="adMessage" class="mt-2 text-danger"></p>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
