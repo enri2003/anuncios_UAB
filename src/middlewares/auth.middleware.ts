@@ -1,54 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { IUser } from '../models/user.model';
 
-export interface IAuthRequest extends Request {
-    user?: IUser;
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
 
 interface JwtPayload {
-    id: string;
-    role: string;
+  id: string;
+  rol: string;
 }
 
-export const auth = async (req: IAuthRequest, res: Response, next: NextFunction) => {
-    try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+export const authMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const header = req.headers.authorization;
 
-        if (!token) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Acceso denegado. Token no proporcionado' 
-            });
-        }
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ mensaje: 'No autorizado, falta token' });
+  }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'defaultSecret') as JwtPayload;
-        req.user = decoded as any;
-        next();
-    } catch (error) {
-        res.status(401).json({ 
-            success: false, 
-            message: 'Token inválido' 
-        });
-    }
-};
+  const token = header.split(' ')[1];
 
-export const checkRole = (roles: string[]) => {
-    return async (req: IAuthRequest, res: Response, next: NextFunction) => {
-        if (!req.user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Usuario no autenticado'
-            });
-        }
-
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({
-                success: false,
-                message: 'No tiene permisos para realizar esta acción'
-            });
-        }
-
-        next();
-    };
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    (req as any).user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ mensaje: 'Token inválido o expirado' });
+  }
 };

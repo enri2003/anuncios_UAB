@@ -1,12 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import { connectDB } from './config/database';
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 
 dotenv.config(); // Carga variables de entorno
 
-// Conexión a la base de datos
+// Conexión a la base de datos (solo una vez)
 connectDB();
 
 // Crea la app Express
@@ -16,6 +17,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Rutas de la API
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
 // Ruta de prueba
 app.get('/', (_req, res) => {
   res.json({ mensaje: '¡Servidor funcionando correctamente!' });
@@ -24,16 +29,7 @@ app.get('/', (_req, res) => {
 // Puerto
 const PORT = process.env.PORT || 3000;
 
-// Inicializa el servidor solo cuando la base de datos está conectada
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/anuncios_uab')
-  .then(() => {
-    console.log("Conexión exitosa a MongoDB");
-
-    app.listen(PORT, () => {
-      console.log(`Servidor corriendo en puerto ${PORT}`);
-    });
-  })
-  .catch((error: Error) => {
-    console.error("Error al conectar a MongoDB:", error);
-    process.exit(1);
-  });
+// Inicia el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});
