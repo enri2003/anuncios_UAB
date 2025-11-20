@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/database';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import adRoutes from './routes/ad.routes';   // 👈 NUEVO
 
 dotenv.config(); // Carga variables de entorno
 
@@ -20,6 +21,7 @@ app.use(express.json());
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ads', adRoutes);  // 👈 NUEVO
 
 // Ruta de prueba
 app.get('/', (_req, res) => {
