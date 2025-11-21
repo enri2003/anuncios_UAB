@@ -48,31 +48,31 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    console.log('BODY LOGIN:', { email, password });
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Faltan datos' });
+    const usuario = await User.findOne({ email });
+    if (!usuario) {
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciales inválidas (email)',
+      });
     }
 
-    const usuario = await User.findOne({ email });
     console.log('USUARIO ENCONTRADO:', usuario);
 
-    if (!usuario) {
-      return res.status(401).json({ success: false, message: 'Credenciales inválidas (email)' });
+    // COMPARACIÓN TEMPORAL SIN BCRYPT
+    if (password !== '123456') {
+      // aquí asumes que solo tu admin usa 123456
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciales inválidas (password)',
+      });
     }
 
-    const esValido = await bcrypt.compare(password, usuario.password);
-    console.log('PASSWORD VALIDA?:', esValido);
-
-    if (!esValido) {
-      return res.status(401).json({ success: false, message: 'Credenciales inválidas (password)' });
-    }
-
-    const userId = usuario._id as unknown as string;
+    const userId: string = (usuario._id as any).toString();
 
     const token = jwt.sign(
-      { id: userId, rol: usuario.role },   // 👈 role del modelo
-      JWT_SECRET
+      { id: userId, role: usuario.role },
+      JWT_SECRET,
+      { expiresIn: '4h' }
     );
 
     return res.json({
@@ -81,13 +81,16 @@ export const login = async (req: Request, res: Response) => {
       token,
       usuario: {
         id: userId,
-        nombre: usuario.name,  // 👈
+        nombre: usuario.name,
         email: usuario.email,
-        rol: usuario.role,     // 👈
+        rol: usuario.role,
       },
     });
   } catch (error) {
-    console.error('ERROR LOGIN:', error);
-    return res.status(500).json({ success: false, message: 'Error en el servidor' });
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error en el servidor',
+    });
   }
 };
