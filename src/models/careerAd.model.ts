@@ -1,19 +1,19 @@
 import { Schema, model, Document } from 'mongoose';
 
-export interface Ad extends Document {
+export interface CareerAd extends Document {
+  carrera: string;        // "Ingeniería de Sistemas", etc.
   titulo: string;
   descripcion: string;
-  categoria: string;      // 'general' o 'UAB General'
-  horaInicio?: string;    // "HH:MM"
-  horaFin?: string;       // "HH:MM"
+  horaInicio?: string;
+  horaFin?: string;
   creadoPor: Schema.Types.ObjectId;
 }
 
-const AdSchema = new Schema<Ad>(
+const CareerAdSchema = new Schema<CareerAd>(
   {
+    carrera: { type: String, required: true },
     titulo: { type: String, required: true },
     descripcion: { type: String, required: true },
-    categoria: { type: String, required: true },
     horaInicio: { type: String, default: null },
     horaFin: { type: String, default: null },
     creadoPor: { type: Schema.Types.ObjectId, ref: 'User', required: true }
@@ -21,4 +21,4 @@ const AdSchema = new Schema<Ad>(
   { timestamps: true }
 );
 
-export default model<Ad>('Ad', AdSchema);
+export default model<CareerAd>('CareerAd', CareerAdSchema);

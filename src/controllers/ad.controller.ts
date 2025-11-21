@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
-import { Ad } from '../models/ad.model';
+import Ad from '../models/ad.model';
 
-// GET /api/ads
+// GET /api/ads  (anuncios generales)
 export const getAds = async (_req: Request, res: Response) => {
   try {
-    const anuncios = await Ad.find().sort({ creadoEn: -1 });
+    // solo anuncios generales
+    const anuncios = await Ad.find({ categoria: 'general' }).sort({ createdAt: -1 });
     res.json(anuncios);
   } catch (error) {
     console.error(error);
@@ -12,10 +13,10 @@ export const getAds = async (_req: Request, res: Response) => {
   }
 };
 
-// POST /api/ads
+// POST /api/ads  (crear anuncio general)
 export const createAd = async (req: Request, res: Response) => {
   try {
-    const { titulo, descripcion, categoria, precio } = req.body;
+    const { titulo, descripcion, categoria, horaInicio, horaFin } = req.body;
 
     if (!titulo || !descripcion || !categoria) {
       return res.status(400).json({ mensaje: 'Faltan datos del anuncio' });
@@ -26,9 +27,10 @@ export const createAd = async (req: Request, res: Response) => {
     const nuevo = await Ad.create({
       titulo,
       descripcion,
-      categoria,
-      precio,
-      creadoPor: user.id,
+      categoria,                     // normalmente 'general'
+      horaInicio: horaInicio || null,
+      horaFin: horaFin || null,
+      creadoPor: user.id
     });
 
     res.status(201).json(nuevo);
@@ -38,15 +40,21 @@ export const createAd = async (req: Request, res: Response) => {
   }
 };
 
-// PUT /api/ads/:id
+// PUT /api/ads/:id  (actualizar anuncio general)
 export const updateAd = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { titulo, descripcion, categoria, precio } = req.body;
+    const { titulo, descripcion, categoria, horaInicio, horaFin } = req.body;
 
     const actualizado = await Ad.findByIdAndUpdate(
       id,
-      { titulo, descripcion, categoria, precio },
+      {
+        titulo,
+        descripcion,
+        categoria,
+        horaInicio: horaInicio || null,
+        horaFin: horaFin || null
+      },
       { new: true }
     );
 
@@ -61,7 +69,7 @@ export const updateAd = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE /api/ads/:id
+// DELETE /api/ads/:id  (eliminar anuncio general)
 export const deleteAd = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
