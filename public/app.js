@@ -1,160 +1,152 @@
 const API_BASE = 'http://localhost:3000/api';
 
-// ====== UTILIDADES TOKEN ======
-function getToken() {
-  return localStorage.getItem('token');
+const adsContainer = document.getElementById('adsContainer');
+const adsError = document.getElementById('adsError');
+
+const createSection = document.getElementById('createSection');
+const adForm = document.getElementById('adForm');
+const adMessage = document.getElementById('adMessage');
+
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// ----- UI según sesión -----
+function actualizarUI() {
+  const token = localStorage.getItem('token');
+  const rol = localStorage.getItem('rol');
+
+  if (token && rol === 'admin') {
+    createSection.style.display = 'block';
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+  } else {
+    createSection.style.display = 'none';
+    loginBtn.style.display = 'inline-block';
+    logoutBtn.style.display = 'none';
+  }
 }
 
-function setToken(token) {
-  localStorage.setItem('token', token);
-}
-
-function clearToken() {
-  localStorage.removeItem('token');
-}
-
-// ====== LOGIN ======
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const msg = document.getElementById('loginMessage');
-
-    msg.textContent = '';
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        msg.textContent = data.message || 'Error al iniciar sesión';
-        return;
-      }
-
-      setToken(data.token);
-      window.location.href = 'index.html';
-    } catch (err) {
-      msg.textContent = 'Error de conexión con el servidor';
-    }
-  });
-}
-
-// ====== LISTAR ANUNCIOS ======
-const adsList = document.getElementById('adsList');
-if (adsList) {
-  cargarAnuncios();
-  configurarAuthUI();
-}
-
+// ----- Cargar anuncios -----
 async function cargarAnuncios() {
-  adsList.innerHTML = '<p>Cargando anuncios...</p>';
-  try {
-    const res = await fetch(`${API_BASE}/ads`);
-    const data = await res.json();
+  adsError.textContent = '';
+  adsContainer.innerHTML = '';
 
-    if (!Array.isArray(data) || data.length === 0) {
-      adsList.innerHTML = '<p class="text-muted">No hay anuncios todavía.</p>';
+  try {
+    const resp = await fetch(`${API_BASE}/ads`);
+    if (!resp.ok) {
+      adsError.textContent = 'Error al cargar anuncios.';
       return;
     }
 
-    adsList.innerHTML = '';
+    const data = await resp.json();
+    if (!Array.isArray(data)) {
+      adsError.textContent = 'Formato inesperado de anuncios.';
+      return;
+    }
+
+    if (data.length === 0) {
+      adsContainer.innerHTML = '<p class="text-muted">No hay anuncios todavía.</p>';
+      return;
+    }
+
     data.forEach((ad) => {
       const col = document.createElement('div');
       col.className = 'col-md-4';
 
-      col.innerHTML = `
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title">${ad.titulo}</h5>
-            <p class="card-text">${ad.descripcion}</p>
-            <p class="card-text"><span class="badge bg-secondary">${ad.categoria}</span></p>
-            <p class="card-text">
-              <strong>Precio:</strong> ${ad.precio != null ? ad.precio : 'Gratuito'}
-            </p>
-            <p class="card-text">
-              <small class="text-muted">Creado: ${new Date(ad.creadoEn).toLocaleString()}</small>
-            </p>
-          </div>
-        </div>
-      `;
-      adsList.appendChild(col);
+      const card = document.createElement('div');
+      card.className = 'card h-100 p-3';
+
+      const h5 = document.createElement('h5');
+      h5.className = 'card-title';
+      h5.textContent = ad.titulo;
+
+      const pDesc = document.createElement('p');
+      pDesc.className = 'card-text';
+      pDesc.textContent = ad.descripcion;
+
+      const spanCat = document.createElement('span');
+      spanCat.className = 'badge bg-secondary mb-2';
+      spanCat.textContent = ad.categoria;
+
+      const pPrecio = document.createElement('p');
+      pPrecio.innerHTML = `<strong>Precio:</strong> ${ad.precio || 0}`;
+
+      const pFecha = document.createElement('p');
+      pFecha.className = 'text-muted mb-0';
+      const fecha = ad.createdAt ? new Date(ad.createdAt) : null;
+      pFecha.textContent = fecha ? `Creado: ${fecha.toLocaleString()}` : '';
+
+      card.appendChild(h5);
+      card.appendChild(pDesc);
+      card.appendChild(spanCat);
+      card.appendChild(pPrecio);
+      card.appendChild(pFecha);
+
+      col.appendChild(card);
+      adsContainer.appendChild(col);
     });
   } catch (err) {
-    adsList.innerHTML = '<p class="text-danger">Error al cargar anuncios.</p>';
+    console.error(err);
+    adsError.textContent = 'Error de conexión al cargar anuncios.';
   }
 }
 
-// ====== CREAR ANUNCIO ======
-const adForm = document.getElementById('adForm');
-if (adForm) {
-  adForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const msg = document.getElementById('adMessage');
-    msg.textContent = '';
+// ----- Crear anuncio (solo admin logueado) -----
+adForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  adMessage.textContent = '';
 
-    const token = getToken();
-    if (!token) {
-      msg.textContent = 'Debes iniciar sesión para crear anuncios.';
+  const token = localStorage.getItem('token');
+  if (!token) {
+    adMessage.textContent = 'Debes iniciar sesión como admin.';
+    return;
+  }
+
+  const nuevoAd = {
+    titulo: document.getElementById('titulo').value.trim(),
+    descripcion: document.getElementById('descripcion').value.trim(),
+    categoria: document.getElementById('categoria').value.trim(),
+    precio: document.getElementById('precio').value
+      ? Number(document.getElementById('precio').value)
+      : 0
+  };
+
+  try {
+    const resp = await fetch(`${API_BASE}/ads`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(nuevoAd)
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      adMessage.textContent = data.message || 'Error al crear anuncio.';
       return;
     }
 
-    const titulo = document.getElementById('titulo').value;
-    const descripcion = document.getElementById('descripcion').value;
-    const categoria = document.getElementById('categoria').value;
-    const precioValue = document.getElementById('precio').value;
-    const precio = precioValue ? Number(precioValue) : undefined;
-
-    try {
-      const res = await fetch(`${API_BASE}/ads`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ titulo, descripcion, categoria, precio })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        msg.textContent = data.mensaje || 'Error al crear anuncio';
-        return;
-      }
-
-      adForm.reset();
-      msg.classList.remove('text-danger');
-      msg.classList.add('text-success');
-      msg.textContent = 'Anuncio creado correctamente.';
-      cargarAnuncios();
-    } catch (err) {
-      msg.textContent = 'Error de conexión al crear anuncio.';
-    }
-  });
-}
-
-// ====== UI LOGIN / LOGOUT EN NAVBAR ======
-function configurarAuthUI() {
-  const btnLogout = document.getElementById('btnLogout');
-  const btnLogin = document.getElementById('btnLogin');
-  if (!btnLogout || !btnLogin) return;
-
-  if (getToken()) {
-    btnLogout.classList.remove('d-none');
-    btnLogin.classList.add('d-none');
-  } else {
-    btnLogout.classList.add('d-none');
-    btnLogin.classList.remove('d-none');
+    adForm.reset();
+    await cargarAnuncios();
+  } catch (err) {
+    console.error(err);
+    adMessage.textContent = 'Error de conexión al crear anuncio.';
   }
+});
 
-  btnLogout.addEventListener('click', () => {
-    clearToken();
-    window.location.reload();
-  });
-}
+// ----- Botones login / logout -----
+loginBtn.addEventListener('click', () => {
+  window.location.href = 'login.html';
+});
+
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('rol');
+  actualizarUI();
+});
+
+// ----- Inicio -----
+actualizarUI();
+cargarAnuncios();
