@@ -21,7 +21,7 @@
             id="email"
             class="form-control"
             required
-            value="admin@uab.edu"
+            autocomplete="username"
           >
         </div>
 
@@ -32,7 +32,7 @@
             id="password"
             class="form-control"
             required
-            value="123456"
+            autocomplete="current-password"
           >
         </div>
 
@@ -40,45 +40,62 @@
         <p id="loginMessage" class="mt-2 text-danger text-center"></p>
       </form>
 
-      <a href="index.html" class="d-block text-center mt-3">Volver a los anuncios</a>
+      <!-- Enlace para registro de usuario normal -->
+      <a href="register.html" class="d-block text-center mt-3">
+        ¿No tienes cuenta? Regístrate
+      </a>
+
+      <a href="index.html" class="d-block text-center mt-2">
+        Volver a los anuncios
+      </a>
     </div>
   </div>
 
   <script>
     const API_BASE = 'http://localhost:3000/api';
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+    // Asegurarse de que el listener se asigna cuando el DOM ya está cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('loginForm');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
       const messageEl = document.getElementById('loginMessage');
-      messageEl.textContent = '';
 
-      try {
-        const resp = await fetch(`${API_BASE}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
+      if (!form) return;
 
-        const data = await resp.json();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-        if (!resp.ok || !data.success) {
-          messageEl.textContent = data.message || 'Credenciales inválidas';
-          return;
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        messageEl.textContent = '';
+
+        try {
+          const resp = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+
+          const data = await resp.json();
+
+          if (!resp.ok || !data.success) {
+            messageEl.textContent = data.message || 'Credenciales inválidas';
+            return;
+          }
+
+          // Guardar token, rol y nombre en localStorage
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('rol', data.usuario.rol);
+          localStorage.setItem('nombre', data.usuario.nombre);
+
+          // Redirigir a la página principal
+          window.location.href = 'index.html';
+        } catch (err) {
+          console.error(err);
+          messageEl.textContent = 'Error de conexión con el servidor';
         }
-
-        // Guardar token y rol en localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('rol', data.usuario.rol);
-
-        // Volver a la página principal
-        window.location.href = 'index.html';
-      } catch (err) {
-        console.error(err);
-        messageEl.textContent = 'Error de conexión con el servidor';
-      }
+      });
     });
   </script>
 </body>

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model';
 
@@ -19,22 +18,21 @@ export const registerAdmin = async (req: Request, res: Response) => {
       return res.status(409).json({ mensaje: 'El email ya está registrado' });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
-
+    // Guardamos la contraseña en texto plano (solo para este proyecto)
     const nuevo = await User.create({
-      name: nombre,       // 👈 campo del modelo
+      name: nombre,
       email,
-      password: hashed,
-      role: 'admin',      // 👈 campo del modelo
+      password,      // SIN hash
+      role: 'admin',
     });
 
     res.status(201).json({
       mensaje: 'Admin registrado correctamente',
       usuario: {
         id: nuevo._id,
-        nombre: nuevo.name,   // 👈
+        nombre: nuevo.name,
         email: nuevo.email,
-        rol: nuevo.role,      // 👈
+        rol: nuevo.role,
       },
     });
   } catch (error) {
@@ -43,7 +41,43 @@ export const registerAdmin = async (req: Request, res: Response) => {
   }
 };
 
-// ========== LOGIN ==========
+// ========== REGISTRO USUARIO NORMAL ==========
+export const registerUser = async (req: Request, res: Response) => {
+  try {
+    const { nombre, email, password } = req.body;
+
+    if (!nombre || !email || !password) {
+      return res.status(400).json({ mensaje: 'Faltan datos' });
+    }
+
+    const existe = await User.findOne({ email });
+    if (existe) {
+      return res.status(409).json({ mensaje: 'El email ya está registrado' });
+    }
+
+    const nuevo = await User.create({
+      name: nombre,
+      email,
+      password,      // SIN hash
+      role: 'user',
+    });
+
+    res.status(201).json({
+      mensaje: 'Usuario registrado correctamente',
+      usuario: {
+        id: nuevo._id,
+        nombre: nuevo.name,
+        email: nuevo.email,
+        rol: nuevo.role,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al registrar usuario' });
+  }
+};
+
+// ========== LOGIN (COMPARACIÓN DIRECTA) ==========
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -57,10 +91,12 @@ export const login = async (req: Request, res: Response) => {
     }
 
     console.log('USUARIO ENCONTRADO:', usuario);
+    console.log('PASSWORD ENVIADO:', password);
+    console.log('PASSWORD BD:', usuario.password);
 
-    // COMPARACIÓN TEMPORAL SIN BCRYPT
-    if (password !== '123456') {
-      // aquí asumes que solo tu admin usa 123456
+    // Comparación directa texto plano
+    if (password !== usuario.password) {
+      console.log('COMPARACIÓN:', `"${password}"`, '!==', `"${usuario.password}"`);
       return res.status(401).json({
         success: false,
         message: 'Credenciales inválidas (password)',

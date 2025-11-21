@@ -5,11 +5,17 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 const router = Router();
 
 // Público: ver anuncios
-router.get('/', getAds);
+// GET http://localhost:3000/api/ads
+router.get('/ads', getAds);
 
 // Protegido: crear, actualizar y eliminar anuncio
-router.post('/', authMiddleware, createAd);
-router.put('/:id', authMiddleware, updateAd);
-router.delete('/:id', authMiddleware, deleteAd);
+// POST http://localhost:3000/api/ads
+router.post('/ads', authMiddleware, createAd);
+
+// PUT http://localhost:3000/api/ads/:id
+router.put('/ads/:id', authMiddleware, updateAd);
+
+// DELETE http://localhost:3000/api/ads/:id
+router.delete('/ads/:id', authMiddleware, deleteAd);
 
 export default router;

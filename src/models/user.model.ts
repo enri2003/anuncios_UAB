@@ -1,12 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcryptjs';
+// import bcrypt from 'bcryptjs';   // ya no lo necesitas
 
 export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
     role: 'admin' | 'user';
-    comparePassword(candidatePassword: string): Promise<boolean>;
+    // comparePassword(candidatePassword: string): Promise<boolean>; // ya no
 }
 
 const userSchema = new Schema({
@@ -37,26 +37,26 @@ const userSchema = new Schema({
     timestamps: true
 });
 
-// Middleware para encriptar la contraseña antes de guardar
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
+// Middleware para encriptar la contraseña antes de guardar (DESACTIVADO)
+// userSchema.pre('save', async function(next) {
+//     if (!this.isModified('password')) return next();
     
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error: any) {
-        next(error);
-    }
-});
+//     try {
+//         const salt = await bcrypt.genSalt(10);
+//         this.password = await bcrypt.hash(this.password, salt);
+//         next();
+//     } catch (error: any) {
+//         next(error);
+//     }
+// });
 
-// Método para comparar contraseñas
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-    try {
-        return await bcrypt.compare(candidatePassword, this.password);
-    } catch (error) {
-        return false;
-    }
-};
+// Método para comparar contraseñas (DESACTIVADO)
+// userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+//     try {
+//         return await bcrypt.compare(candidatePassword, this.password);
+//     } catch (error) {
+//         return false;
+//     }
+// };
 
 export const User = mongoose.model<IUser>('User', userSchema);

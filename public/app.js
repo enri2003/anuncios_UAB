@@ -10,13 +10,19 @@ const adMessage = document.getElementById('adMessage');
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 
-// ----- UI según sesión -----
+// =========================
+//   UI SEGÚN SESIÓN
+// =========================
 function actualizarUI() {
   const token = localStorage.getItem('token');
   const rol = localStorage.getItem('rol');
 
   if (token && rol === 'admin') {
     createSection.style.display = 'block';
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+  } else if (token && rol === 'user') {
+    createSection.style.display = 'none';
     loginBtn.style.display = 'none';
     logoutBtn.style.display = 'inline-block';
   } else {
@@ -26,21 +32,29 @@ function actualizarUI() {
   }
 }
 
-// ----- Cargar anuncios -----
+// =========================
+//   CARGAR ANUNCIOS
+// =========================
 async function cargarAnuncios() {
   adsError.textContent = '';
   adsContainer.innerHTML = '';
 
   try {
     const resp = await fetch(`${API_BASE}/ads`);
+    console.log('STATUS /api/ads:', resp.status);
+
     if (!resp.ok) {
-      adsError.textContent = 'Error al cargar anuncios.';
+      adsError.textContent = 'No se pudieron cargar los anuncios.';
       return;
     }
 
     const data = await resp.json();
+    console.log('DATA /api/ads:', data);
+
+    // Tu backend devuelve un ARRAY directamente: [...]
     if (!Array.isArray(data)) {
       adsError.textContent = 'Formato inesperado de anuncios.';
+      console.error('Respuesta de /api/ads no es array:', data);
       return;
     }
 
@@ -69,7 +83,7 @@ async function cargarAnuncios() {
       spanCat.textContent = ad.categoria;
 
       const pPrecio = document.createElement('p');
-      pPrecio.innerHTML = `<strong>Precio:</strong> ${ad.precio || 0}`;
+      pPrecio.innerHTML = `<strong>Precio:</strong> ${ad.precio ?? 0}`;
 
       const pFecha = document.createElement('p');
       pFecha.className = 'text-muted mb-0';
@@ -91,52 +105,60 @@ async function cargarAnuncios() {
   }
 }
 
-// ----- Crear anuncio (solo admin logueado) -----
-adForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  adMessage.textContent = '';
+// =========================
+//   CREAR ANUNCIO (ADMIN)
+// =========================
+if (adForm) {
+  adForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    adMessage.textContent = '';
 
-  const token = localStorage.getItem('token');
-  if (!token) {
-    adMessage.textContent = 'Debes iniciar sesión como admin.';
-    return;
-  }
+    const token = localStorage.getItem('token');
+    const rol = localStorage.getItem('rol');
 
-  const nuevoAd = {
-    titulo: document.getElementById('titulo').value.trim(),
-    descripcion: document.getElementById('descripcion').value.trim(),
-    categoria: document.getElementById('categoria').value.trim(),
-    precio: document.getElementById('precio').value
-      ? Number(document.getElementById('precio').value)
-      : 0
-  };
-
-  try {
-    const resp = await fetch(`${API_BASE}/ads`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(nuevoAd)
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      adMessage.textContent = data.message || 'Error al crear anuncio.';
+    if (!token || rol !== 'admin') {
+      adMessage.textContent = 'Debes iniciar sesión como administrador.';
       return;
     }
 
-    adForm.reset();
-    await cargarAnuncios();
-  } catch (err) {
-    console.error(err);
-    adMessage.textContent = 'Error de conexión al crear anuncio.';
-  }
-});
+    const nuevoAd = {
+      titulo: document.getElementById('titulo').value.trim(),
+      descripcion: document.getElementById('descripcion').value.trim(),
+      categoria: document.getElementById('categoria').value.trim(),
+      precio: document.getElementById('precio').value
+        ? Number(document.getElementById('precio').value)
+        : 0
+    };
 
-// ----- Botones login / logout -----
+    try {
+      const resp = await fetch(`${API_BASE}/ads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(nuevoAd)
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        adMessage.textContent = data.message || 'Error al crear anuncio.';
+        return;
+      }
+
+      adForm.reset();
+      await cargarAnuncios();
+    } catch (err) {
+      console.error(err);
+      adMessage.textContent = 'Error de conexión al crear anuncio.';
+    }
+  });
+}
+
+// =========================
+//   BOTONES LOGIN / LOGOUT
+// =========================
 loginBtn.addEventListener('click', () => {
   window.location.href = 'login.html';
 });
@@ -144,9 +166,13 @@ loginBtn.addEventListener('click', () => {
 logoutBtn.addEventListener('click', () => {
   localStorage.removeItem('token');
   localStorage.removeItem('rol');
+  localStorage.removeItem('nombre');
   actualizarUI();
+  cargarAnuncios();
 });
 
-// ----- Inicio -----
+// =========================
+//   INICIO
+// =========================
 actualizarUI();
 cargarAnuncios();
