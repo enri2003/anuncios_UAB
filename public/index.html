@@ -125,12 +125,15 @@
           return;
         }
 
+        const rol = localStorage.getItem('rol');
+        const token = localStorage.getItem('token');
+
         data.forEach((ad) => {
           const col = document.createElement('div');
-          col.className = 'col-md-4';
+          col.className = 'col-12 mb-3';
 
           const card = document.createElement('div');
-          card.className = 'card h-100 p-3';
+          card.className = 'card p-3';
 
           const h5 = document.createElement('h5');
           h5.className = 'card-title';
@@ -148,7 +151,7 @@
           pPrecio.innerHTML = '<strong>Precio:</strong> ' + (ad.precio ?? 0);
 
           const pFecha = document.createElement('p');
-          pFecha.className = 'text-muted mb-0';
+          pFecha.className = 'text-muted mb-2';
           const fecha = ad.createdAt ? new Date(ad.createdAt) : null;
           pFecha.textContent = fecha ? 'Creado: ' + fecha.toLocaleString() : '';
 
@@ -157,6 +160,57 @@
           card.appendChild(spanCat);
           card.appendChild(pPrecio);
           card.appendChild(pFecha);
+
+          // Botones solo para admin
+          if (rol === 'admin' && token) {
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'mt-2';
+
+            const btnEditar = document.createElement('button');
+            btnEditar.className = 'btn btn-sm btn-outline-primary me-2';
+            btnEditar.textContent = 'Editar';
+            btnEditar.addEventListener('click', () => {
+              // Rellenar formulario con datos del anuncio
+              document.getElementById('titulo').value = ad.titulo;
+              document.getElementById('descripcion').value = ad.descripcion;
+              document.getElementById('categoria').value = ad.categoria;
+              document.getElementById('precio').value = ad.precio ?? 0;
+              // Guardar id en atributo data del formulario
+              adForm.dataset.editId = ad._id;
+            });
+
+            const btnEliminar = document.createElement('button');
+            btnEliminar.className = 'btn btn-sm btn-outline-danger';
+            btnEliminar.textContent = 'Eliminar';
+            btnEliminar.addEventListener('click', async () => {
+              if (!confirm('¿Seguro que quieres eliminar este anuncio?')) return;
+
+              try {
+                const respDel = await fetch(`${API_BASE}/ads/${ad._id}`, {
+                  method: 'DELETE',
+                  headers: {
+                    Authorization: 'Bearer ' + token
+                  }
+                });
+
+                const dataDel = await respDel.json();
+
+                if (!respDel.ok) {
+                  alert(dataDel.message || 'Error al eliminar anuncio');
+                  return;
+                }
+
+                await cargarAnuncios();
+              } catch (err) {
+                console.error(err);
+                alert('Error de conexión al eliminar anuncio');
+              }
+            });
+
+            btnGroup.appendChild(btnEditar);
+            btnGroup.appendChild(btnEliminar);
+            card.appendChild(btnGroup);
+          }
 
           col.appendChild(card);
           adsContainer.appendChild(col);
@@ -189,9 +243,13 @@
             : 0
         };
 
+        const editId = adForm.dataset.editId || null;
+        const url = editId ? `${API_BASE}/ads/${editId}` : `${API_BASE}/ads`;
+        const method = editId ? 'PUT' : 'POST';
+
         try {
-          const resp = await fetch(`${API_BASE}/ads`, {
-            method: 'POST',
+          const resp = await fetch(url, {
+            method,
             headers: {
               'Content-Type': 'application/json',
               Authorization: 'Bearer ' + token
@@ -202,15 +260,18 @@
           const data = await resp.json();
 
           if (!resp.ok) {
-            adMessage.textContent = data.message || 'Error al crear anuncio.';
+            adMessage.textContent = data.message || 'Error al guardar anuncio.';
             return;
           }
 
+          // Limpiar formulario y modo edición
           adForm.reset();
+          delete adForm.dataset.editId;
+          adMessage.textContent = '';
           await cargarAnuncios();
         } catch (err) {
           console.error(err);
-          adMessage.textContent = 'Error de conexión al crear anuncio.';
+          adMessage.textContent = 'Error de conexión al guardar anuncio.';
         }
       });
     }
