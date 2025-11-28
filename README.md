@@ -522,9 +522,9 @@ En `index.html` se revisa la información almacenada:
 
 Proyecto desarrollado por:
 
-- **Elger Enrique Márquez Arze**  
+- **Elger Enrique Marquez Arze**  
 - **Josue Brayen Rojas**  
 - **Miguel Blasquez Iquiza**  
 - **Marcos Blasquez Iquiza**
 
-Universidad Adventista de Bolivia – Ingeniería de Sistemas – Asignatura: Tecnologías para Internet.
+Universidad Adventista de Bolivia – Ingeniería de Sistemas – Asignatura: Tecnologías de Internet.
